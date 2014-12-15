@@ -22,12 +22,13 @@ public class GameField extends JPanel {
 	public Tank tank2;
 	public BufferedImage win;
 	public BufferedImage lose;
+	public BufferedImage inst;
 	
 	public GameField() {
 		super();
 		setBackground(Color.WHITE);
-		tank1 = new Tank(new Point(25, 500), "TankBlue");
-		tank2 = new Tank(new Point(900, 500), "TankRed");
+		tank1 = new Tank(new Point(25, 500), "TankBlue", true);
+		tank2 = new Tank(new Point(900, 500), "TankRed", false);
 		tank2.faceLeft();
 		ground = new Ground();
 		Game.gp.addBody(tank1);
@@ -82,7 +83,14 @@ public class GameField extends JPanel {
 			}
 		} else {
 			super.paintComponent(g);
-			g.drawString("Welcome To Tanks!", 435, 290);
+			try {
+				if (inst == null) {
+					inst = ImageIO.read(new File("GameInstructions.png"));
+				}
+			} catch (IOException e) {
+				System.out.println("Internal Error:" + e.getMessage());
+			}
+			g.drawImage(inst, 0, 0, 1000, 600, null);
 		}
 	}
 }

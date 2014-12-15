@@ -20,7 +20,7 @@ public class OpponentStatus extends JPanel {
 	public OpponentStatus() {
 		super();
 		// Creates the titled border around the status panel
-		setBorder(BorderFactory.createTitledBorder("Status"));
+		setBorder(BorderFactory.createTitledBorder("Opp Status"));
 		setLayout(new GridLayout(10, 1));
 		
 		reset();

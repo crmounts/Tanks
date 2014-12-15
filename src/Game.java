@@ -22,14 +22,24 @@ public class Game extends JFrame implements Runnable {
 	public static boolean isPlaying = false;
 	public static boolean isPaused = false;
 	public static boolean isOver = false;
+	public static TankController tc;
+	public static TankController tc2;
+	public static TankAI tai;
 	
 	public Game() {
 		super("Tanks");
+		
+		
 		
 		// TODO - Create classes extending JPanel where appropriate
 		// Main game field
 		gf = new GameField();
 		add(gf, BorderLayout.CENTER);
+		
+		tc = new TankController(gf.tank1);
+		tc2 = new TankController(gf.tank2);
+		tai = new TankAI(tc2);
+		
 		
 		// Display available weapons and selected weapon
 		weaponsPanel = new WeaponsPanel();
@@ -55,12 +65,25 @@ public class Game extends JFrame implements Runnable {
 				statusPanel.updateLabels();
 				oppStatusPanel.updateLabels();
 				weaponsPanel.updateLabels();
+				tai.determineMove();
 			}
 		};
 		TimerTask fuelDec = new TimerTask() {
 			public void run() {
-				gf.tank1.setFuel(gf.tank1.getFuel() - gf.tank1.fConRate());
-				gf.tank1.setJetFuel(gf.tank1.getJetFuel() - gf.tank1.jfConRate());
+				if (Game.isPlaying) {
+					gf.tank1.setFuel(gf.tank1.getFuel() - gf.tank1.fConRate());
+					gf.tank1.setJetFuel(gf.tank1.getJetFuel() - gf.tank1.jfConRate());
+					gf.tank2.setFuel(gf.tank2.getFuel() - gf.tank2.fConRate());
+					gf.tank2.setJetFuel(gf.tank2.getJetFuel() - gf.tank2.jfConRate());
+					tai.determineBomb();
+				}
+			}
+		};
+		TimerTask ai = new TimerTask() {
+			public void run() {
+				if (Game.isPlaying) {
+					tai.determineFire();
+				}
 			}
 		};
 		Timer timer = new Timer();
@@ -69,6 +92,8 @@ public class Game extends JFrame implements Runnable {
 		timer2.scheduleAtFixedRate(updateScreen, 0, 5);
 		Timer timer3 = new Timer();
 		timer3.scheduleAtFixedRate(fuelDec, 0, 1000);
+		Timer timer4 = new Timer();
+		timer4.scheduleAtFixedRate(ai, 0, 400);
 		
 		
 		// Allows all components of the frame to respond to key events
@@ -96,101 +121,35 @@ public class Game extends JFrame implements Runnable {
 	}
 	
 	private class Dispatcher implements KeyEventDispatcher {
-		private boolean lf = false;
-		private boolean rf = false;
-		private boolean uf = false;
 		
 		@Override
 		public boolean dispatchKeyEvent(KeyEvent e) {
 			if (Game.isPlaying) {
 				if (e.getID() == KeyEvent.KEY_PRESSED) {
 					if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-						gf.tank1.faceLeft();
-						if ((gf.tank1.isOnGround() && gf.tank1.isMoveGround()) ||
-								(!gf.tank1.isOnGround() && gf.tank1.isMoveAir())) {
-							gf.tank1.addForce(GamePhysics.L_ACC);
-							if (!lf) {
-								fCUP();
-								lf = true;
-							}
-						}
+						tc.leftMove();
 					} else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-						gf.tank1.faceRight();
-						if ((gf.tank1.isOnGround() && gf.tank1.isMoveGround()) ||
-								(!gf.tank1.isOnGround() && gf.tank1.isMoveAir())) {
-							gf.tank1.addForce(GamePhysics.R_ACC);
-							if (!rf) {
-								fCUP();
-								rf = true;
-							}
-						}	
+						tc.rightMove();
 					} else if (e.getKeyCode() == KeyEvent.VK_UP) {
-						if (gf.tank1.isMoveAir()) {
-							gf.tank1.addForce(GamePhysics.U_ACC);
-							if (!uf) {
-								gf.tank1.incrJFCR();
-								uf = true;
-							}
-							gf.tank1.takeOff();
-						}
-						
+						tc.upMove();
 					} else if (e.getKeyChar() == 'w') {
-						if (Game.gf.tank1.canMissile()) {
-							Missile m;
-							if (Game.gf.tank1.isFacingRight()) {
-								m = new Missile(gf.tank1.getFront(), "Right.png",
-										new Vector(6,0));
-							} else {
-								m = new Missile(gf.tank1.getFront(), "Left.png",
-										new Vector(-6, 0));
-							}
-							int i = Game.gp.addBody(m);
-							m.setId(i);
-							Game.gf.tank1.decrMissiles();
-						}
-						
+						tc.missile();
 					} else if (e.getKeyChar() == 's') {
-						if (Game.gf.tank1.canShoot()) {
-							Bullet b;
-							if (Game.gf.tank1.isFacingRight()) {
-								b = new Bullet(gf.tank1.getFront(), "Right.png",
-										new Vector(4,0));
-							} else {
-								b = new Bullet(gf.tank1.getFront(), "Left.png",
-										new Vector(-4, 0));
-							}
-							int i = Game.gp.addBody(b);
-							b.setId(i);
-							Game.gf.tank1.decrBullets();
-						}
-						
+						tc.shoot();
 					} else if (e.getKeyChar() == 'a') {
 						gf.tank1.rotateTLeft();
 					} else if (e.getKeyChar() == 'd') {
 						gf.tank1.rotateTRight();
 					} else if (e.getKeyChar() == 'f') {
-						if (Game.gf.tank1.canBomb()) {
-							Bomb b = new Bomb(gf.tank1.getTEndpoint(), 
-									gf.tank1.getTrajectory().
-									unitVect().scale(3));
-							int i = Game.gp.addBody(b);
-							b.setId(i);
-							Game.gf.tank1.decrBombs();
-						}
+						tc.bomb();
 					}
 	            } else if (e.getID() == KeyEvent.KEY_RELEASED) {
 	            	if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-	            		gf.tank1.removeForce(GamePhysics.L_ACC);
-	            		fCDOWN();
-	            		lf = false;
+	            		tc.leftStop();
 					} else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-						gf.tank1.removeForce(GamePhysics.R_ACC);
-						fCDOWN();
-						rf = false;
+						tc.rightStop();
 					} else if (e.getKeyCode() == KeyEvent.VK_UP) {
-						gf.tank1.removeForce(GamePhysics.U_ACC);
-						fCDOWN();
-						uf = false;
+						tc.upStop();
 					} else if (e.getKeyChar() == 'a') {
 						gf.tank1.stopRotate();
 					} else if (e.getKeyChar() == 'd') {
@@ -202,22 +161,6 @@ public class Game extends JFrame implements Runnable {
 	            }
 			}
             return false;
-		}
-		
-		private void fCUP() {
-			if (gf.tank1.isOnGround()) {
-				gf.tank1.incrFCR();
-			} else {
-				gf.tank1.incrJFCR();
-			}
-		}
-		
-		private void fCDOWN() {
-			if (gf.tank1.isOnGround()) {
-				gf.tank1.decrFCR();
-			} else {
-				gf.tank1.decrJFCR();
-			}
 		}
 	}
 }

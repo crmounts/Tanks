@@ -70,7 +70,6 @@ public abstract class PhysicsBody {
 	}
 	
 	public void collide(PhysicsBody p) {
-		System.out.println("Collision");
 	}
 	
 	public void noCollision() {
@@ -91,6 +90,24 @@ public abstract class PhysicsBody {
 	
 	public void setId(int inId) {
 		id = inId;
+	}
+	
+	public int getXDistance(PhysicsBody b) {
+		return b.position.x - position.x;
+	}
+	
+	public int getYDistance(PhysicsBody b) {
+		return b.position.y - position.y;
+	}
+	
+	public double getDistance(PhysicsBody b) {
+		Vector vect = new Vector(getXDistance(b), getYDistance(b));
+		return vect.getMagnitude();
+	}
+	
+	public double getDirToward(PhysicsBody b) {
+		Vector vect = new Vector(getXDistance(b), getYDistance(b));
+		return vect.getDirection();
 	}
 }
 
@@ -120,7 +137,7 @@ class Tank extends PhysicsBody {
 	private boolean canMoveGround = true;
 	private boolean canMoveAir = true;
 	
-	public Tank(Point startLoc, String inVersion) {
+	public Tank(Point startLoc, String inVersion, boolean inPlayer) {
 		type = "Tank";
 		setData(25.0, startLoc, new Vector(0.0, 0.0), inVersion, 50, 50);
 		addGravity();
@@ -221,6 +238,25 @@ class Tank extends PhysicsBody {
 			int i = Game.gp.addBody(exp);
 			exp.setId(i);
 			Game.gp.removeBody(p.id);
+			break;
+		case "Tank" :
+			if (position.x < p.position.x)  {
+				int x = p.position.x - 51;
+				if (x < 950) {
+					position.x = x;
+				} else {
+					position.x = position.x;
+					p.position.x = p.position.x;
+				}
+			} else {
+				int x = p.position.x + 51;
+				if (x > 50) {
+					position.x = x;
+				} else {
+					position.x = position.x;
+					p.position.x = p.position.x;
+				}
+			}
 		}
 	}
 	
@@ -229,18 +265,18 @@ class Tank extends PhysicsBody {
 		g.drawImage(img, position.x, position.y, 
 				width, height, null);
 		g.drawLine(position.x + width/2, position.y - 5, 
-					(int)(position.x + width/2 + trajectory.getX()), 
-					 (int)(position.y - 5 - trajectory.getY()));
+				(int)(position.x + width/2 + trajectory.getX()), 
+				 (int)(position.y - 5 - trajectory.getY()));
 	}
 	
 	@Override
 	public void accelerate() {
 		double x = trajectory.getX();
-		if (x > 50) {
+		if (x >= 50) {
 			rRight = false;
 			x = 49;
 		}
-		if (x < -50) {
+		if (x <= -50) {
 			rLeft = false;
 			x = -49;
 		}
@@ -249,6 +285,7 @@ class Tank extends PhysicsBody {
 			double y = Math.sqrt(2500 - trajectory.getX() * trajectory.getX());
 			if (Double.isNaN(y)) {
 				y = 9.9498743710662;
+				
 			}
 			trajectory.setX(x);
 			trajectory.setY(y);
@@ -354,10 +391,10 @@ class Tank extends PhysicsBody {
 	
 	public Point getFront() {
 		if (facingRight) {
-			return new Point((int)(position.x + width + 5),
+			return new Point((int)(position.x + width + 5 + 10 * velocity.getX()),
 							 (int)(position.y + 5));
 		} else {
-			return new Point((int)(position.x - 42),
+			return new Point((int)(position.x - 42 + 10 * velocity.getX()),
 					 (int)(position.y + 5));
 		}
 	}
@@ -473,6 +510,14 @@ class Tank extends PhysicsBody {
 	public boolean canMissile() {
 		return canMissile;
 	}
+	
+	public int xvel() {
+		return (int)velocity.getX();
+	}
+	
+	public void setTrajectory(Vector inVect) {
+		trajectory = inVect;
+	}
 }
 
 class Ground extends PhysicsBody {
@@ -480,7 +525,7 @@ class Ground extends PhysicsBody {
 	public Ground() {
 		type = "Ground";
 		setData(99999999999999999999.0, new Point(0, 550), 
-				new Vector(0.0, 0.0), "Ground.png", 1000, 50);
+				new Vector(0.0, 0.0), "Ground.png", 1020, 50);
 		
 		try {
 			if (img == null) {

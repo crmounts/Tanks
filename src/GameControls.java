@@ -30,9 +30,12 @@ public class GameControls extends JPanel {
 					Game.gp.reset();
 					Game.gf.tank1.reset();
 					Game.gf.tank2.reset();
-					Game.gf.tank1 = new Tank(new Point(25, 500), "TankBlue");
-					Game.gf.tank2 = new Tank(new Point(900, 500), "TankRed");
+					Game.gf.tank1 = new Tank(new Point(25, 500), "TankBlue", true);
+					Game.gf.tank2 = new Tank(new Point(900, 500), "TankRed", false);
 					Game.gf.tank2.faceLeft();
+					Game.tc = new TankController(Game.gf.tank1);
+					Game.tc2 = new TankController(Game.gf.tank2);
+					Game.tai = new TankAI(Game.tc2);
 					Game.gf.ground = new Ground();
 					Game.gp.addBody(Game.gf.tank1);
 					Game.gp.addBody(Game.gf.tank2);
