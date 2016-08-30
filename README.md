@@ -8,6 +8,6 @@ Code a game of your own choosing.
 Features of Note
 * Implemented rudimentary physics engine from scratch
 * Collision detection
-* Nontrivial AI opponent
+* Non trivial AI opponent
 
 
